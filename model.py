@@ -12,10 +12,10 @@ import traceback
 
 class  OcrHandle(object):
     def __init__(self):
-        self.text_handle = DBNET(model_path)
-        self.crnn_handle = CRNNHandle(crnn_model_path)
+        self.text_handle = DBNET(model_path, providers=providers)
+        self.crnn_handle = CRNNHandle(crnn_model_path, providers=providers)
         if angle_detect:
-            self.angle_handle = AngleNetHandle(angle_net_path)
+            self.angle_handle = AngleNetHandle(angle_net_path, providers=providers)
 
 
     def crnnRecWithBox(self,im, boxes_list,score_list):
@@ -84,6 +84,7 @@ class  OcrHandle(object):
 if __name__ == "__main__":
     print('-'*100)
     path = '1.png'
+    providers = ['CPUExecutionProvider']
     # path = 'test_imgs/dotnet/OcrLiteOnnxCs.PNG'
     img = Image.open(path)
     # img = img.rotate(180)

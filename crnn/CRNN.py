@@ -21,9 +21,9 @@ def softmax(x):
 
 
 class CRNNHandle:
-    def __init__(self, model_path):
+    def __init__(self, model_path, providers):
 
-        self.sess = rt.InferenceSession(model_path)
+        self.sess = rt.InferenceSession(model_path, providers=providers)
 
     def predict(self, image):
         """

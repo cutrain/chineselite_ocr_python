@@ -6,9 +6,9 @@ import onnxruntime as rt
 import time
 
 class AngleNetHandle:
-    def __init__(self, model_path,size_h = 32, size_w = 192):
+    def __init__(self, model_path, providers, size_h = 32, size_w = 192):
 
-        self.sess = rt.InferenceSession(model_path)
+        self.sess = rt.InferenceSession(model_path, providers=providers)
         self.size_h = size_h
         self.size_w = size_w
 
