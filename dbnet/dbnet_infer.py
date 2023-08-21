@@ -1,9 +1,9 @@
+import torch
 import onnxruntime as rt
 import  numpy as np
 import time
 import cv2
 from .decode import  SegDetectorRepresenter
-
 mean = (0.485, 0.456, 0.406)
 std = (0.229, 0.224, 0.225)
 
@@ -41,9 +41,11 @@ def draw_bbox(img_path, result, color=(255, 0, 0), thickness=2):
     return img_path
 
 
+device='cuda:0'
 class DBNET(metaclass=SingletonType):
     def __init__(self, MODEL_PATH, providers):
-        self.sess = rt.InferenceSession(MODEL_PATH, providers=providers)
+        self.model = torch.load(MODEL_PATH).to(device)
+        self.model.eval()
 
         self.decode_handel = SegDetectorRepresenter()
 
@@ -64,8 +66,6 @@ class DBNET(metaclass=SingletonType):
             tar_h = tar_h - tar_h % 32
             tar_h = max(32, tar_h)
             scale_h = tar_h / h
-        
-
 
         img = cv2.resize(img, None, fx=scale_w, fy=scale_h)
 
@@ -75,11 +75,12 @@ class DBNET(metaclass=SingletonType):
         img -= mean
         img /= std
         img = img.transpose(2, 0, 1)
-        transformed_image = np.expand_dims(img, axis=0)
-        print('11')
-        out = self.sess.run(["out1"], {"input0": transformed_image.astype(np.float32)})
-        print('12')
-        box_list, score_list = self.decode_handel(out[0][0], h, w)
+        transformed_image = np.expand_dims(img, axis=0).astype(np.float32)
+        x = torch.tensor(transformed_image,dtype=torch.float32).to(device)
+        with torch.no_grad():
+            out = self.model(x)
+        result = np.array(out[0].cpu())
+        box_list, score_list = self.decode_handel(result, h, w)
         if len(box_list) > 0:
             idx = box_list.reshape(box_list.shape[0], -1).sum(axis=1) > 0  # 去掉全为0的框
             box_list, score_list = box_list[idx], score_list[idx]

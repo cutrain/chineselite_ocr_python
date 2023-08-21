@@ -11,14 +11,14 @@ import time
 import traceback
 
 class  OcrHandle(object):
-    def __init__(self):
+    def __init__(self, providers):
         self.text_handle = DBNET(model_path, providers=providers)
         self.crnn_handle = CRNNHandle(crnn_model_path, providers=providers)
         if angle_detect:
             self.angle_handle = AngleNetHandle(angle_net_path, providers=providers)
 
 
-    def crnnRecWithBox(self,im, boxes_list,score_list):
+    def crnnRecWithBox(self, img: np.ndarray, boxes_list, score_list):
         """
         crnn模型，ocr识别
         @@model,
@@ -34,7 +34,7 @@ class  OcrHandle(object):
         line_imgs = []
         for index, (box, score) in enumerate(zip(boxes_list[:angle_detect_num], score_list[:angle_detect_num])):
             tmp_box = copy.deepcopy(box)
-            partImg_array = get_rotate_crop_image(im, tmp_box.astype(np.float32))
+            partImg_array = get_rotate_crop_image(img, tmp_box.astype(np.float32))
             partImg = Image.fromarray(partImg_array).convert("RGB")
             line_imgs.append(partImg)
 
@@ -46,7 +46,7 @@ class  OcrHandle(object):
         for index, (box ,score) in enumerate(zip(boxes_list,score_list)):
 
             tmp_box = copy.deepcopy(box)
-            partImg_array = get_rotate_crop_image(im, tmp_box.astype(np.float32))
+            partImg_array = get_rotate_crop_image(img, tmp_box.astype(np.float32))
 
 
             partImg = Image.fromarray(partImg_array).convert("RGB")
@@ -54,15 +54,8 @@ class  OcrHandle(object):
             if angle_detect and angle_res:
                 partImg = partImg.rotate(180)
 
-
-            if not is_rgb:
-                partImg = partImg.convert('L')
-
             try:
-                if is_rgb:
-                    simPred = self.crnn_handle.predict_rbg(partImg)  ##识别的文本
-                else:
-                    simPred = self.crnn_handle.predict(partImg)  ##识别的文本
+                simPred = self.crnn_handle.predict(partImg)  ##识别的文本
             except Exception as e:
                 print(traceback.format_exc())
                 continue
@@ -74,7 +67,11 @@ class  OcrHandle(object):
         return results
 
 
-    def text_predict(self,img,short_size):
+    def text_predict(self, img, short_size):
+        if isinstance(img, Image.Image):
+            img = np.asarray(img).astype(np.uint8)
+        if len(img.shape) == 2:
+            img = img.reshape(img.shape + (1,))
         boxes_list, score_list = self.text_handle.process(np.asarray(img).astype(np.uint8),short_size=short_size)
         result = self.crnnRecWithBox(np.array(img), boxes_list,score_list)
 
@@ -83,20 +80,31 @@ class  OcrHandle(object):
 
 if __name__ == "__main__":
     print('-'*100)
+    # path = '1.png'
+    # providers = ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider', ]
+    providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+    # providers = ['CPUExecutionProvider']
+    ocr = OcrHandle(providers)
+
     path = '1.png'
-    providers = ['CPUExecutionProvider']
-    # path = 'test_imgs/dotnet/OcrLiteOnnxCs.PNG'
     img = Image.open(path)
+    img = img.convert('L')
     # img = img.rotate(180)
-    ocr = OcrHandle()
     size = min(img.size) // 32 * 32
 
-    import time
-    start = time.time()
     num = 1
-    for i in range(num):
-        result = ocr.text_predict(img, size)
+
+    start = time.time()
+    result = ocr.text_predict(img, size)
     print(result)
-    print(len(result))
     end = time.time()
     print('avg time', (end-start)/num)
+
+    # path = 'dbnet/test.jpg'
+    # img = Image.open(path)
+    # img = img.convert('L')
+    # size = min(img.size) // 32 * 32
+    # start = time.time()
+    # result = ocr.text_predict(img, size)
+    # end = time.time()
+    # print('avg time', (end-start)/num)

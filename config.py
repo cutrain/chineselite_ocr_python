@@ -12,14 +12,15 @@ pad_size = 0 #检测是pad尺寸，有些文档文字充满整个屏幕检测有
 
 # crnn参数
 crnn_lite = True
-model_path = os.path.join(father_path, "models/dbnet.onnx")
-is_rgb = True
+# model_path = os.path.join(father_path, "models/dbnet2.onnx")
+model_path = os.path.join(father_path, "models/dbnet.pth")
 crnn_model_path = os.path.join(father_path, "models/crnn_lite_lstm.onnx")
+# crnn_model_path = os.path.join(father_path, "models/crnn_lite_lstm.pth")
 
 
 
 # angle
-angle_detect = True
+angle_detect = False
 angle_detect_num = 30
 angle_net_path = os.path.join(father_path, "models/angle_net.onnx")
 
